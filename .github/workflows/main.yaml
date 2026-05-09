@@ -36,6 +36,7 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
+          sudo apt-get install -y gcc make curl imagemagick awk
 
       - name: Build release
         id: build
