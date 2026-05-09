@@ -37,10 +37,13 @@ jobs:
         run: |
           sudo apt-get update
 
+      - name: Build release
+        id: build
+        run: make clean all CFLAGS="-Wall -Wextra -Wpedantic -Werror -I. -std=c23"
+
       - name: Run tests
         id: tests
-        run: |
-          make clean test -s
+        run: make test
 
       - name: Report final status
         if: always()
@@ -49,13 +52,25 @@ jobs:
           REPO: ${{ github.event.client_payload.repo }}
           SHA: ${{ github.event.client_payload.sha }}
         run: |
-          if [ "${{ steps.tests.outcome }}" = "success" ]; then
-            STATE="success"
-            DESC="Tests passed"
-          else
+          STATE="success"
+          DESC=()
+
+          if [ "${{ steps.build.outcome }}" != "success" ]; then
             STATE="failure"
-            DESC="Tests failed"
+            DESC+=("Build failed")
           fi
+
+          if [ "${{ steps.tests.outcome }}" != "success" ]; then
+            STATE="failure"
+            DESC+=("Tests failed")
+          fi
+
+          if [ "$STATE" = "success" ]; then
+            DESC="Build and tests passed"
+          fi
+
+          MESSAGE=$(printf "%s; " "${DESC[0]}")
+          MESSAGE=${MESSAGE%; }
 
           curl -L \
             -X POST \
@@ -65,5 +80,5 @@ jobs:
             -d "{
               \"state\":\"$STATE\",
               \"context\":\"External CI\",
-              \"description\":\"$DESC\"
+              \"description\":\"$MESSAGE\"
             }"
