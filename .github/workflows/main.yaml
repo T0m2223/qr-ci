@@ -39,7 +39,7 @@ jobs:
 
       - name: Build release
         id: build
-        run: make clean all CFLAGS="-Wall -Wextra -Wpedantic -Werror -I. -std=c23"
+        run: make clean all CFLAGS="-Wall -Wextra -Wpedantic -Werror -I. -std=c2x"
 
       - name: Run tests
         id: tests
