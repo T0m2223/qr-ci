@@ -1,0 +1,69 @@
+name: QR Gen CI
+
+on:
+  repository_dispatch:
+    types: [run-tests]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set pending status
+        env:
+          GH_TOKEN: ${{ secrets.CI_PAT }}
+          REPO: ${{ github.event.client_payload.repo }}
+          SHA: ${{ github.event.client_payload.sha }}
+        run: |
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/$REPO/statuses/$SHA \
+            -d '{
+              "state":"pending",
+              "context":"External CI",
+              "description":"Running tests..."
+            }'
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.client_payload.repo }}
+          ref: ${{ github.event.client_payload.sha }}
+          token: ${{ secrets.CI_PAT }}
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+
+      - name: Run tests
+        id: tests
+        run: |
+          make clean test -s
+
+      - name: Report final status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.CI_PAT }}
+          REPO: ${{ github.event.client_payload.repo }}
+          SHA: ${{ github.event.client_payload.sha }}
+        run: |
+          if [ "${{ steps.tests.outcome }}" = "success" ]; then
+            STATE="success"
+            DESC="Tests passed"
+          else
+            STATE="failure"
+            DESC="Tests failed"
+          fi
+
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/$REPO/statuses/$SHA \
+            -d "{
+              \"state\":\"$STATE\",
+              \"context\":\"External CI\",
+              \"description\":\"$DESC\"
+            }"
