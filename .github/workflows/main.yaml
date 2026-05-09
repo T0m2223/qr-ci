@@ -38,6 +38,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc make curl imagemagick mawk
 
+      - name: Add magick symlink
+        run: sudo ln -sf "$(which convert)" /usr/local/bin/magick
+
       - name: Build release
         id: build
         run: make clean all CFLAGS="-Wall -Wextra -Wpedantic -Werror -I. -std=c2x -D_POSIX_C_SOURCE=200809L"
