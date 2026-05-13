@@ -39,7 +39,7 @@ jobs:
           sudo apt-get install -y gcc make curl imagemagick mawk
 
       - name: Add magick symlink
-        run: sudo ln -sf "$(which convert)" /usr/local/bin/magick
+        run: ln -sf "$(which convert)" /usr/local/bin/magick
 
       - name: Build release
         id: build
